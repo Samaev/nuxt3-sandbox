@@ -4,8 +4,12 @@
 
 <template>
 <div>
-  <header>Our page</header>
-  <div>{{ slot}}</div>
+  <NuxtLink to="/">Nuxt 3 Sandbox</NuxtLink>
+  <div class="d-flex flex-column">
+    <NuxtLink to="/about">About us</NuxtLink>
+    <NuxtLink to="/calculator">Calculator</NuxtLink>
+  </div>
+  <slot></slot>
 </div>
 </template>
 
