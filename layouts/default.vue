@@ -3,12 +3,11 @@
 
 <template>
 <div>
-  <NuxtRouteAnnouncer />
-  <NuxtLoadingIndicator   duration="2000"/>
   <NuxtLink to="/">Nuxt 3 Sandbox</NuxtLink>
-  <div class="d-flex flex-column">
+  <div class="d-flex">
     <NuxtLink to="/about">About us</NuxtLink>
     <NuxtLink to="/calculator">Calculator</NuxtLink>
+    <NuxtLink to="/comments">Comments</NuxtLink>
   </div>
   <slot></slot>
 </div>
