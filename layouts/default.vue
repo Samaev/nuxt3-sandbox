@@ -1,9 +1,10 @@
-<script setup lang="ts">
-
+<script setup>
 </script>
 
 <template>
 <div>
+  <NuxtRouteAnnouncer />
+  <NuxtLoadingIndicator   duration="2000"/>
   <NuxtLink to="/">Nuxt 3 Sandbox</NuxtLink>
   <div class="d-flex flex-column">
     <NuxtLink to="/about">About us</NuxtLink>
