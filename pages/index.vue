@@ -9,6 +9,7 @@
     Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aliquam aliquid autem est et eveniet excepturi expedita explicabo incidunt iste, itaque, laudantium maiores, necessitatibus optio placeat provident quaerat quasi quod velit vero voluptates. Architecto consequatur consequuntur dolore dolorum eligendi exercitationem facere, facilis harum non possimus ratione recusandae saepe sit ut vitae?
   </main>
 
+  <iframe src="https://stage.anydaycharter.com/en/search" width="100%" height="800px" style="border: none;"></iframe>
 
 
 </div>
