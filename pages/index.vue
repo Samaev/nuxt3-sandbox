@@ -4,12 +4,12 @@
 
 <template>
 <div>
-  <h1>Main page</h1>
+  <h1>Any Day Charter Widget</h1>
   <main>
-    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aliquam aliquid autem est et eveniet excepturi expedita explicabo incidunt iste, itaque, laudantium maiores, necessitatibus optio placeat provident quaerat quasi quod velit vero voluptates. Architecto consequatur consequuntur dolore dolorum eligendi exercitationem facere, facilis harum non possimus ratione recusandae saepe sit ut vitae?
+    This an official widget from user-friendly yacht rental search engine that guarantees the best prices.
   </main>
 
-  <iframe src="https://stage.anydaycharter.com/en/search" width="100%" height="800px" style="border: none;"></iframe>
+  <iframe src="http://localhost:3000/ru/frame/search?destinations=turkey" width="100%" height="800px" style="border: none;"></iframe>
 
 
 </div>
