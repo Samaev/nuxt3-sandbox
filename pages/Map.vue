@@ -3,138 +3,108 @@
 </template>
 
 <script setup>
-import { onMounted, ref, onBeforeUnmount } from 'vue'
-const { public: { mapBoxToken } } = useRuntimeConfig()
-import mapboxgl from 'mapbox-gl'
-import * as turf from '@turf/turf'
+import {onMounted, ref, onBeforeUnmount} from 'vue';
 
-const mapContainer = ref(null)
-let map, marker, animationFrame
+const {public: {mapBoxToken}} = useRuntimeConfig();
+import mapboxgl from 'mapbox-gl';
+import * as turf from '@turf/turf';
 
-// Начальные и конечные точки маршрута
-const origin = [23.7275, 37.9838] // Афины
-const heraklion = [25.1442, 35.3387] // Ираклион (Крит)
-const chania = [24.0158, 35.5176] // Ханья (Крит)
+const mapContainer = ref(null);
+let map, marker, animationFrame;
 
-const duration = 5000 // Длительность анимации в миллисекундах
-const steps = 300 // Количество шагов для анимации
-const waveAmplitude = 0.01 // Амплитуда волны (параметр для "волн")
-const waveFrequency = 0.1 // Частота волны, для создания кривизны
+mapboxgl.accessToken = mapBoxToken;
 
-mapboxgl.accessToken = mapBoxToken
+// Координаты маршрута: Ираклион → в море → Ретимно → в море → Ханья
+const routeCoords = [
+ [25.148254, 35.341846], // Порт Ираклиона
+ [25.0000, 35.5000],     // В море, севернее Ираклиона
+ [24.7000, 35.5000],     // В море, севернее Ретимно
+ [24.4823, 35.3656],     // Порт Ретимно
+ [24.3000, 35.6000],     // В море, севернее Ханьи
+ [24.0202, 35.5125],     // Порт Ханья
+];
 
-// Функция для генерации волнистого маршрута (Афины - Ираклион)
-const generateWaveRoute = (start, middle, end) => {
- const line1 = turf.lineString([start, middle]) // Афины - Ираклион
- const line2 = turf.lineString([middle, end]) // Ираклион - Ханья
- const lineDistance1 = turf.length(line1)
- const lineDistance2 = turf.length(line2)
+const steps = 300;
 
- const arc = []
-
- // Генерация точек с волной вдоль первого сегмента (Афины - Ираклион)
- for (let i = 0; i < steps; i++) {
-  const point = turf.along(line1, (lineDistance1 / steps) * i).geometry.coordinates
-  const waveEffect = Math.sin(i * waveFrequency) * waveAmplitude
-  point[1] += waveEffect
-  arc.push(point)
- }
-
- // Генерация точек вдоль побережья (Ираклион - Ханья)
- // Используем небольшие отклонения для волнистого пути
- for (let i = 0; i < steps; i++) {
-  const point = turf.along(line2, (lineDistance2 / steps) * i).geometry.coordinates
-  const waveEffect = Math.sin(i * waveFrequency) * waveAmplitude * 0.5 // Уменьшаем эффект волны на этом участке
-  point[1] += waveEffect
-  arc.push(point)
- }
-
- return arc
-}
-
-// Функция для анимации маршрута
 const animateRoute = (route) => {
- let currentStep = 0
+ const line = turf.lineString(route);
+ const lineDistance = turf.length(line);
+ const arc = [];
 
- // Функция анимации
- const animate = () => {
-  if (currentStep >= route.length) {
-   cancelAnimationFrame(animationFrame)
-   return
-  }
-
-  const slicedArc = route.slice(0, currentStep + 1)
-
-  // Отображаем линию только при наличии хотя бы двух точек
-  if (slicedArc.length >= 2) {
-   const slicedLine = turf.lineString(slicedArc)
-   map.getSource('route').setData(slicedLine)
-  }
-
-  // Двигаем маркер по пути
-  marker.setLngLat(route[currentStep])
-
-  currentStep++
-  animationFrame = requestAnimationFrame(animate)
+ for (let i = 0; i < steps; i++) {
+  arc.push(turf.along(line, (lineDistance / steps) * i).geometry.coordinates);
  }
 
- animationFrame = requestAnimationFrame(animate)
-}
+ let currentStep = 0;
 
-// Инициализация карты
+ const animate = () => {
+  if (currentStep >= arc.length) {
+   cancelAnimationFrame(animationFrame);
+   return;
+  }
+
+  const slicedArc = arc.slice(0, currentStep + 1);
+
+  if (slicedArc.length >= 2) {
+   const slicedLine = turf.lineString(slicedArc);
+   map.getSource('route').setData(slicedLine);
+  }
+
+  marker.setLngLat(arc[currentStep]);
+
+  currentStep++;
+  animationFrame = requestAnimationFrame(animate);
+ };
+
+ animationFrame = requestAnimationFrame(animate);
+};
+
 const initializeMap = () => {
  map = new mapboxgl.Map({
   container: mapContainer.value,
   style: 'mapbox://styles/mapbox/light-v10',
-  center: origin,
-  zoom: 8
- })
+  center: [24.8, 35.4],
+  zoom: 8,
+ });
 
  map.on('load', () => {
-  const initialLine = turf.lineString([origin, origin])
+  const initialLine = turf.lineString([routeCoords[0], routeCoords[0]]);
 
-  // Добавляем исходный источник для маршрута
   map.addSource('route', {
    type: 'geojson',
-   data: initialLine
-  })
+   data: initialLine,
+  });
 
-  // Добавляем слой для отображения маршрута
   map.addLayer({
    id: 'route',
    type: 'line',
    source: 'route',
    layout: {
     'line-join': 'round',
-    'line-cap': 'round'
+    'line-cap': 'round',
    },
    paint: {
     'line-color': '#3b82f6',
-    'line-width': 4
-   }
-  })
+    'line-width': 4,
+   },
+  });
 
-  // Создаём маркер
-  marker = new mapboxgl.Marker({ color: '#EF4444' })
-    .setLngLat(origin)
-    .addTo(map)
+  marker = new mapboxgl.Marker({color: '#EF4444'})
+    .setLngLat(routeCoords[0])
+    .addTo(map);
 
-  // Генерация волнистого маршрута (Афины - Ираклион - Ханья)
-  const waveRoute = generateWaveRoute(origin, heraklion, chania)
-
-  // Запускаем анимацию маршрута
-  animateRoute(waveRoute)
- })
-}
+  animateRoute(routeCoords);
+ });
+};
 
 onMounted(() => {
- initializeMap()
-})
+ initializeMap();
+});
 
 onBeforeUnmount(() => {
- if (animationFrame) cancelAnimationFrame(animationFrame)
- if (map) map.remove()
-})
+ if (animationFrame) cancelAnimationFrame(animationFrame);
+ if (map) map.remove();
+});
 </script>
 
 <style scoped>
