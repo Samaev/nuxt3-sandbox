@@ -3,36 +3,36 @@
 </template>
 
 <script setup>
-import {onMounted, ref, onBeforeUnmount} from 'vue';
-
-const {public: {mapBoxToken}} = useRuntimeConfig();
+import { onMounted, ref, onBeforeUnmount } from 'vue';
 import mapboxgl from 'mapbox-gl';
 import * as turf from '@turf/turf';
 
+const { public: { mapBoxToken } } = useRuntimeConfig();
 const mapContainer = ref(null);
 let map, marker, animationFrame;
 
 mapboxgl.accessToken = mapBoxToken;
 
-// Координаты маршрута: Ираклион → в море → Ретимно → в море → Ханья
-const routeCoords = [
+// Новый маршрут: Ираклион → в море → Ретимно → в море → Ханья
+const controlPoints = [
  [25.148254, 35.341846], // Порт Ираклиона
- [25.0000, 35.5000],     // В море, севернее Ираклиона
- [24.7000, 35.5000],     // В море, севернее Ретимно
- [24.4823, 35.3656],     // Порт Ретимно
- [24.3000, 35.6000],     // В море, севернее Ханьи
+ [25.00, 35.60],         // севернее Ираклиона
+ [24.60, 35.52],         // севернее Ретимно
+ [24.40, 35.65],         // севернее Ханьи
  [24.0202, 35.5125],     // Порт Ханья
 ];
 
 const steps = 300;
 
-const animateRoute = (route) => {
- const line = turf.lineString(route);
- const lineDistance = turf.length(line);
+const animateRoute = (inputCoords) => {
+ const line = turf.lineString(inputCoords);
+ const spline = turf.bezierSpline(line, { sharpness: 0.85 });
+ const distance = turf.length(spline);
  const arc = [];
 
  for (let i = 0; i < steps; i++) {
-  arc.push(turf.along(line, (lineDistance / steps) * i).geometry.coordinates);
+  const point = turf.along(spline, (distance / steps) * i);
+  arc.push(point.geometry.coordinates);
  }
 
  let currentStep = 0;
@@ -45,13 +45,12 @@ const animateRoute = (route) => {
 
   const slicedArc = arc.slice(0, currentStep + 1);
 
-  if (slicedArc.length >= 2) {
+  if (slicedArc.length >= 2 && !arePointsEqual(slicedArc[0], slicedArc[1])) {
    const slicedLine = turf.lineString(slicedArc);
    map.getSource('route').setData(slicedLine);
   }
 
   marker.setLngLat(arc[currentStep]);
-
   currentStep++;
   animationFrame = requestAnimationFrame(animate);
  };
@@ -59,16 +58,20 @@ const animateRoute = (route) => {
  animationFrame = requestAnimationFrame(animate);
 };
 
+function arePointsEqual(a, b) {
+ return a[0] === b[0] && a[1] === b[1];
+}
+
 const initializeMap = () => {
  map = new mapboxgl.Map({
   container: mapContainer.value,
   style: 'mapbox://styles/mapbox/light-v10',
-  center: [24.8, 35.4],
+  center: [24.8, 35.5],
   zoom: 8,
  });
 
  map.on('load', () => {
-  const initialLine = turf.lineString([routeCoords[0], routeCoords[0]]);
+  const initialLine = turf.lineString([controlPoints[0], controlPoints[0]]);
 
   map.addSource('route', {
    type: 'geojson',
@@ -84,16 +87,17 @@ const initializeMap = () => {
     'line-cap': 'round',
    },
    paint: {
-    'line-color': '#3b82f6',
-    'line-width': 4,
+    'line-color': '#EF4444',
+    'line-width': 3,
+    'line-dasharray': [1, 1], // Мелкий пунктир
    },
   });
 
-  marker = new mapboxgl.Marker({color: '#EF4444'})
-    .setLngLat(routeCoords[0])
+  marker = new mapboxgl.Marker({ color: '#EF4444' })
+    .setLngLat(controlPoints[0])
     .addTo(map);
 
-  animateRoute(routeCoords);
+  animateRoute(controlPoints);
  });
 };
 
